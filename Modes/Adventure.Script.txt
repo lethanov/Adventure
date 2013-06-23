@@ -1,5 +1,5 @@
 /**
- *	Mode melee
+ *	Mode Adventure
  */
 
 #Extends "Modes/ShootMania/ModeBase.Script.txt"
