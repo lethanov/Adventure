@@ -1,0 +1,365 @@
+/**
+ *	Mode melee
+ */
+
+#Extends "Modes/ShootMania/ModeBase.Script.txt"
+
+#Const	CompatibleMapTypes	"AdventureArena"
+#Const	Version				"2013-06-23"
+#Const	ScriptName			"Adventure.Script.txt"
+
+#Include "MathLib" as MathLib
+#Include "TextLib" as TextLib
+#Include "Libs/Nadeo/Layers.Script.txt" as Layers
+#Include "Libs/Nadeo/Message.Script.txt" as Message
+#Include "Libs/Nadeo/Interface.Script.txt" as Interface
+#Include "Libs/Nadeo/ShootMania/SM.Script.txt" as SM
+#Include "Libs/Nadeo/ShootMania/Score.Script.txt" as Score
+#Include "Libs/Nadeo/ShootMania/WarmUp.Script.txt" as WarmUp
+#Include "Libs/Nadeo/ShootMania/SpawnScreen.Script.txt" as SpawnScreen
+#Include "Libs/Nadeo/ShootMania/ScoresTable.Script.txt" as ScoresTable
+#Include "Libs/Nadeo/Layers.Script.txt" as Layers
+
+// ---------------------------------- //
+// Settings
+// ---------------------------------- //
+#Setting S_TimeLimit	1000 as _("Time limit")		///< Time limit on a map
+#Setting S_WarmUpDuration 90 as _("Warmup duration")
+
+#Const C_NbBots			3	///< Number of bots
+
+#Const Description _("Neant")
+
+// ---------------------------------- //
+// Globales variables
+// ---------------------------------- //
+declare Ident	G_StartSpawnTank;		///< Id of all the BlockSpawns of the map
+declare Ident	G_StartSpawnSniper;		///< Id of all the BlockSpawns of the map
+declare Ident	G_StartSpawnAssault;		///< Id of all the BlockSpawns of the map
+declare Ident	G_StartSpawnSpeed;		///< Id of all the BlockSpawns of the map
+
+// ---------------------------------- //
+// Extend
+// ---------------------------------- //
+
+***LogVersion***
+***
+MB_LogVersion(ScriptName, Version);
+MB_LogVersion(SM::GetScriptName(), SM::GetScriptVersion());
+MB_LogVersion(Score::GetScriptName(), Score::GetScriptVersion());
+MB_LogVersion(Layers::GetScriptName(), Layers::GetScriptVersion());
+MB_LogVersion(Message::GetScriptName(), Message::GetScriptVersion());
+MB_LogVersion(Interface::GetScriptName(), Interface::GetScriptVersion());
+MB_LogVersion(ScoresTable::GetScriptName(), ScoresTable::GetScriptVersion());
+MB_LogVersion(SpawnScreen::GetScriptName(), SpawnScreen::GetScriptVersion());
+***
+
+// ---------------------------------- //
+// Set rules
+// ---------------------------------- //
+***Rules***
+***
+declare ModeName = "Adventure";
+SpawnScreen::CreateRules(ModeName, Description);
+ModeStatusMessage = _("");
+***
+
+// ---------------------------------- //
+// Server start
+// ---------------------------------- //
+***StartServer***
+***
+// ---------------------------------- //
+// Set mode options
+UseClans = False;
+
+// ---------------------------------- //
+// Create the rules
+---Rules---
+
+// ---------------------------------- //
+// Initialize UI
+SpawnScreen::CreateScores();
+SpawnScreen::CreateMapInfo();
+Interface::CreateRank();
+
+// ---------------------------------- //
+// Create the scores table
+declare Text BgImage = "file://Media/Manialinks/ShootMania/Common/topsBg.dds";
+ScoresTable::Load();
+ScoresTable::SetColumnsWidth(2., 2., 3., 15., 2., 2., 0., 0., 0., 4., 5.);
+ScoresTable::SetTableFormat(2, 6);
+ScoresTable::SetTableBackgroundImage(BgImage, <0.05, 56.>, <207., 178.>);
+ScoresTable::Build();
+
+// ---------------------------------- //
+// Reset the attack order
+WarmUp::ResetOrder();
+
+***
+
+// ---------------------------------- //
+// Map start
+// ---------------------------------- //
+***StartMap***
+***	
+Users_SetNbFakeUsers(C_NbBots, 0);
+Score::MatchBegin();
+Score::RoundBegin();
+
+SM::SetupDefaultVisibility();
+
+// ---------------------------------- //
+// Init bases
+foreach (Base in Bases) {
+	Base.Clan = 0;
+	Base.IsActive = True;
+}
+
+foreach (Spawn in BlockSpawns) {
+	if (Spawn.Tag == "SpawnTank") {
+		G_StartSpawnTank = Spawn.Id;
+	}
+	if (Spawn.Tag == "SpawnAssault") {
+		G_StartSpawnAssault = Spawn.Id;
+	}
+	if (Spawn.Tag == "SpawnSniper") {
+		G_StartSpawnSniper = Spawn.Id;
+	}
+	if (Spawn.Tag == "SpawnSpeed") {
+		G_StartSpawnSpeed = Spawn.Id;
+	}
+}
+
+// ---------------------------------- //
+// Init scores
+MB_Sleep(1); ///< Allow the scores array to be sorted
+foreach (Score in Scores) {
+	declare Integer LastPoint for Score;
+	LastPoint = 0;
+}
+declare LeadId = NullId;
+
+if (Scores.existskey(0)) LeadId = Scores[0].User.Id;
+declare CurrentPointLimit = 10;
+
+
+
+// ---------------------------------- //
+// New map sound
+
+UIManager.UIAll.SendNotice("", CUIConfig::ENoticeLevel::MatchInfo, Null, CUIConfig::EAvatarVariant::Default, CUIConfig::EUISound::StartRound, 0);
+
+StartTime = Now;
+EndTime = StartTime + (S_TimeLimit * 1000);
+UIManager.UIAll.UISequence = CUIConfig::EUISequence::Playing;
+***
+
+***OnNewPlayer***
+***
+ScoresTable::SetFooterStats(Player, TextLib::Compose(_("Points limit: %1"), TextLib::ToText(10)));
+***
+
+***OnNewSpectator***
+***
+ScoresTable::SetFooterStats(Spectator, TextLib::Compose(_("Points limit: %1"), TextLib::ToText(10)));
+***
+
+// ---------------------------------- //
+// Play loop
+// ---------------------------------- //
+***PlayLoop***
+***
+
+foreach (Event, PendingEvents) {
+	// ---------------------------------- //
+	// On armor empty
+	if (Event.Type == CSmModeEvent::EType::OnArmorEmpty) {
+		Discard(Event);
+	} 
+	// ---------------------------------- //
+	// On hit
+	else if (Event.Type == CSmModeEvent::EType::OnHit) {
+		Discard(Event);
+	} 
+	// ---------------------------------- //
+	// On player request respawn
+	else if (Event.Type == CSmModeEvent::EType::OnPlayerRequestRespawn) {
+		Discard(Event);
+	} 
+	// ---------------------------------- //
+	// Others
+	else {
+		PassOn(Event);
+	}
+}	
+
+// ---------------------------------- //
+// Spawn players
+declare nbPlayer = 1;
+foreach (Player in Players) {
+	if(nbPlayer == 1){
+		if (Player.SpawnStatus == CSmPlayer::ESpawnStatus::NotSpawned && !Player.RequestsSpectate) {
+			MeleeSpawnPlayer(Player, "Tank");
+			SetPlayerWeapon(Player, CSmMode::EWeapon::Nucleus, False);
+			SetPlayerAmmoMax(Player, CSmMode::EWeapon::Nucleus, 5);
+			Player.AmmoGain = 1.2;
+			Player.ArmorMax = 1000;
+			Player.Armor = 1000;
+			Player.StaminaMax = 1.0;
+			Player.StaminaPower = 1.0;
+			Player.StaminaGain = 0.4;
+		}
+	}
+	if(nbPlayer == 2){
+		if (Player.SpawnStatus == CSmPlayer::ESpawnStatus::NotSpawned && !Player.RequestsSpectate) {
+			MeleeSpawnPlayer(Player, "Sniper");
+			SetPlayerWeapon(Player, CSmMode::EWeapon::Laser, False);
+			SetPlayerAmmoMax(Player, CSmMode::EWeapon::Laser, 1);
+			Player.AmmoGain = 1.7;
+			Player.ArmorMax = 300;
+			Player.Armor = 300;
+			Player.StaminaMax = 0.7;
+			Player.StaminaPower = 1.0;
+			Player.StaminaGain = 0.6;
+		}
+	}
+	if(nbPlayer == 3){
+		if (Player.SpawnStatus == CSmPlayer::ESpawnStatus::NotSpawned && !Player.RequestsSpectate) {
+			MeleeSpawnPlayer(Player, "Assault");
+			SetPlayerWeapon(Player, CSmMode::EWeapon::Rocket, False);
+			SetPlayerAmmoMax(Player, CSmMode::EWeapon::Rocket, 8);
+			Player.AmmoGain = 1.2;
+			Player.ArmorMax = 400;
+			Player.Armor = 400;
+			Player.StaminaMax = 0.7;
+			Player.StaminaPower = 1.0;
+			Player.StaminaGain = 0.8;
+		}
+	}
+	if(nbPlayer == 4){
+		if (Player.SpawnStatus == CSmPlayer::ESpawnStatus::NotSpawned && !Player.RequestsSpectate) {
+			MeleeSpawnPlayer(Player, "Speed");
+			SetPlayerWeapon(Player, CSmMode::EWeapon::Arrow, False);
+			SetPlayerAmmoMax(Player, CSmMode::EWeapon::Arrow, 2);
+			Player.AmmoGain = 1.9;
+			Player.ArmorMax = 500;
+			Player.Armor = 500;
+			Player.StaminaMax = 1.0;
+			Player.StaminaPower = 1.0;
+			Player.StaminaGain = 1.0;
+			
+		}
+	}
+	nbPlayer += 1;
+}
+
+// ---------------------------------- //
+// Play sound and notice if someone is taking the lead
+if (Scores.existskey(0) && Scores[0].User.Id != LeadId) {
+	LeadId = Scores[0].User.Id;
+	Message::SendBigMessage(TextLib::Compose(_("$<%1$> takes the lead!"), Scores[0].User.Name), 3000, 1, CUIConfig::EUISound::PhaseChange, 1);
+}
+
+// ---------------------------------- //
+// Update UI points limit
+if (CurrentPointLimit != 10) {
+	CurrentPointLimit = 10;
+	foreach (Player in AllPlayers) ScoresTable::SetFooterStats(Player, TextLib::Compose(_("Points limit: %1"), TextLib::ToText(10)));
+}
+
+Message::Loop();
+
+// ---------------------------------- //
+// victory conditions
+declare IsMatchOver = False;
+if (Now > EndTime) IsMatchOver = True;
+foreach (Player in Players) {
+	if (Player.Score != Null && Player.Score.RoundPoints >= 10) IsMatchOver = True;
+}
+
+if (IsMatchOver) MB_StopMap = True;
+***
+
+// ---------------------------------- //
+// Map end
+// ---------------------------------- //
+***EndMap***
+***
+EndTime = -1;
+Score::RoundEnd();
+Score::MatchEnd(True);
+
+// ---------------------------------- //
+// End match sequence
+declare CUser Winner <=> Null;
+declare MaxPoints = 0;
+foreach (Score in Scores) {
+	if (Score.Points > MaxPoints) {
+		MaxPoints = Score.Points;
+		Winner <=> Score.User;
+	} else if (Score.Points == MaxPoints) {
+		Winner <=> Null;
+	}
+}
+foreach (Player in Players) {
+	if (Player.User != Winner) UnspawnPlayer(Player);
+	Interface::UpdatePosition(Player);
+}
+
+MB_Sleep(1000);
+Message::CleanBigMessages();
+UIManager.UIAll.BigMessageSound = CUIConfig::EUISound::EndRound;
+UIManager.UIAll.BigMessageSoundVariant = 0;
+if (Winner != Null) {
+	UIManager.UIAll.BigMessage = TextLib::Compose(_("$<%1$> wins the match!"), Winner.Name);
+} else {
+	UIManager.UIAll.BigMessage = _("|Match|Draw");
+}
+MB_Sleep(2000);
+UIManager.UIAll.UISequence = CUIConfig::EUISequence::EndRound;
+UIManager.UIAll.ScoreTableVisibility = CUIConfig::EVisibility::ForcedVisible;
+MB_Sleep(5000);
+
+UIManager.UIAll.UISequence = CUIConfig::EUISequence::Podium;
+wait(UIManager.UIAll.UISequenceIsCompleted);
+
+UIManager.UIAll.ScoreTableVisibility = CUIConfig::EVisibility::Normal;
+UIManager.UIAll.BigMessage = "";
+***
+
+// ---------------------------------- //
+// Server end
+// ---------------------------------- //
+***EndServer***
+***
+ScoresTable::Unload();
+Interface::DestroyRank();
+SpawnScreen::DestroyRules();
+SpawnScreen::DestroyScores();
+SpawnScreen::DestroyMapInfo();
+***
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+
+/* ------------------------------------- */
+/** Spawn a player
+ *
+ * @param	_Player		The player to spawn
+ */
+Void MeleeSpawnPlayer(CSmPlayer _Player, Text Type) {
+	if(Type == "Tank"){
+		SM::SpawnPlayer(_Player, 0, BlockSpawns[G_StartSpawnTank]);
+	}
+	if(Type == "Assault"){
+		SM::SpawnPlayer(_Player, 0, BlockSpawns[G_StartSpawnAssault]);
+	}
+	if(Type == "Sniper"){
+		SM::SpawnPlayer(_Player, 0, BlockSpawns[G_StartSpawnSniper]);
+	}
+	if(Type == "Speed"){
+		SM::SpawnPlayer(_Player, 0, BlockSpawns[G_StartSpawnSpeed]);
+	}
+}

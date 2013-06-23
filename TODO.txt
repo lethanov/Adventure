@@ -1,0 +1,3 @@
+//Ajouter un temps de WarmUp
+//AJouter un choix de Poste
+//Les joueurs spawn quand chacun à fait F6
