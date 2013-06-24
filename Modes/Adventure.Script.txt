@@ -15,29 +15,55 @@
 #Include "Libs/Nadeo/Interface.Script.txt" as Interface
 #Include "Libs/Nadeo/ShootMania/SM.Script.txt" as SM
 #Include "Libs/Nadeo/ShootMania/Score.Script.txt" as Score
-#Include "Libs/Nadeo/ShootMania/WarmUp.Script.txt" as WarmUp
+#Include "Libs/Nadeo/ShootMania/WarmUpSimple.Script.txt" as WarmUp
 #Include "Libs/Nadeo/ShootMania/SpawnScreen.Script.txt" as SpawnScreen
 #Include "Libs/Nadeo/ShootMania/ScoresTable.Script.txt" as ScoresTable
-#Include "Libs/Nadeo/Layers.Script.txt" as Layers
 
 // ---------------------------------- //
-// Settings
+// Paramètre du script
 // ---------------------------------- //
 #Setting S_TimeLimit	1000 as _("Time limit")		///< Time limit on a map
 #Setting S_WarmUpDuration 90 as _("Warmup duration")
+#Setting S_FriendlyFire False as _("Friendly Fire")
 
-#Const C_NbBots			3	///< Number of bots
-
+// ---------------------------------- //
+// Constantes
+// ---------------------------------- //
+#Const C_NbBots			3
 #Const Description _("Neant")
 
-// ---------------------------------- //
-// Globales variables
-// ---------------------------------- //
-declare Ident	G_StartSpawnTank;		///< Id of all the BlockSpawns of the map
-declare Ident	G_StartSpawnSniper;		///< Id of all the BlockSpawns of the map
-declare Ident	G_StartSpawnAssault;		///< Id of all the BlockSpawns of the map
-declare Ident	G_StartSpawnSpeed;		///< Id of all the BlockSpawns of the map
+// Tank
+#Const C_StaminaTank		0.5
+#Const C_ArmorTank			1000 
+#Const C_AmmoTank 			5
+#Const C_AmmoGainTank 		1.2
 
+// Sniper
+#Const C_StaminaSniper		0.7
+#Const C_ArmorSniper		300 
+#Const C_AmmoSniper 		1
+#Const C_AmmoGainSniper 	1.7
+
+// Assault
+#Const C_StaminaAssault		0.8
+#Const C_ArmorAssault		400 
+#Const C_AmmoAssault 		8
+#Const C_AmmoGainAssault 	1.2
+
+// Speed
+#Const C_StaminaSpeed		1.0
+#Const C_ArmorSpeed			400 
+#Const C_AmmoSpeed 			2
+#Const C_AmmoGainSpeed 		1.9
+
+// ---------------------------------- //
+// Variables Globales
+// ---------------------------------- //
+declare Ident	G_StartSpawnTank;		///< Id du block spawn du Tank
+declare Ident	G_StartSpawnSniper;		///< Id du block spawn du Sniper
+declare Ident	G_StartSpawnAssault;	///< Id du block spawn du Assault
+declare Ident	G_StartSpawnSpeed;		///< Id du block spawn du Speed
+declare Boolean G_PlayerIsReady;
 // ---------------------------------- //
 // Extend
 // ---------------------------------- //
@@ -59,9 +85,10 @@ MB_LogVersion(SpawnScreen::GetScriptName(), SpawnScreen::GetScriptVersion());
 // ---------------------------------- //
 ***Rules***
 ***
-declare ModeName = "Adventure";
-SpawnScreen::CreateRules(ModeName, Description);
-ModeStatusMessage = _("");
+	declare ModeName = "Adventure";
+	SpawnScreen::CreateRules(ModeName, Description);
+	ModeStatusMessage = _("In development");
+	
 ***
 
 // ---------------------------------- //
@@ -69,32 +96,26 @@ ModeStatusMessage = _("");
 // ---------------------------------- //
 ***StartServer***
 ***
-// ---------------------------------- //
-// Set mode options
-UseClans = False;
 
-// ---------------------------------- //
-// Create the rules
----Rules---
+	// Set mode options
+	UseClans = False;
+	G_PlayerIsReady = False;
+	// Create the rules
+	---Rules---
+	//TODO
 
-// ---------------------------------- //
-// Initialize UI
-SpawnScreen::CreateScores();
-SpawnScreen::CreateMapInfo();
-Interface::CreateRank();
+	// Initialize UI
+	SpawnScreen::CreateScores();
+	SpawnScreen::CreateMapInfo();
+	Interface::CreateRank();
 
-// ---------------------------------- //
-// Create the scores table
-declare Text BgImage = "file://Media/Manialinks/ShootMania/Common/topsBg.dds";
-ScoresTable::Load();
-ScoresTable::SetColumnsWidth(2., 2., 3., 15., 2., 2., 0., 0., 0., 4., 5.);
-ScoresTable::SetTableFormat(2, 6);
-ScoresTable::SetTableBackgroundImage(BgImage, <0.05, 56.>, <207., 178.>);
-ScoresTable::Build();
-
-// ---------------------------------- //
-// Reset the attack order
-WarmUp::ResetOrder();
+	// Create the scores table
+	declare Text BgImage = "file://Media/Manialinks/ShootMania/Common/topsBg.dds";
+	ScoresTable::Load();
+	ScoresTable::SetColumnsWidth(2., 2., 3., 15., 2., 2., 0., 0., 0., 4., 5.);
+	ScoresTable::SetTableFormat(2, 6);
+	ScoresTable::SetTableBackgroundImage(BgImage, <0.05, 56.>, <207., 178.>);
+	ScoresTable::Build();
 
 ***
 
@@ -103,66 +124,60 @@ WarmUp::ResetOrder();
 // ---------------------------------- //
 ***StartMap***
 ***	
-Users_SetNbFakeUsers(C_NbBots, 0);
-Score::MatchBegin();
-Score::RoundBegin();
+	Users_SetNbFakeUsers(C_NbBots, 0);
+	Score::MatchBegin();
+	Score::RoundBegin();
 
-SM::SetupDefaultVisibility();
+	SM::SetupDefaultVisibility();
 
-// ---------------------------------- //
 // Init bases
-foreach (Base in Bases) {
-	Base.Clan = 0;
-	Base.IsActive = True;
-}
-
-foreach (Spawn in BlockSpawns) {
-	if (Spawn.Tag == "SpawnTank") {
-		G_StartSpawnTank = Spawn.Id;
+	foreach (Base in Bases) {
+		Base.Clan = 0;
+		Base.IsActive = True;
 	}
-	if (Spawn.Tag == "SpawnAssault") {
-		G_StartSpawnAssault = Spawn.Id;
+
+//Initialisation des spawns
+	foreach (Spawn in BlockSpawns) {
+		if (Spawn.Tag == "SpawnTank") {
+			G_StartSpawnTank = Spawn.Id;
+		}
+		if (Spawn.Tag == "SpawnAssault") {
+			G_StartSpawnAssault = Spawn.Id;
+		}
+		if (Spawn.Tag == "SpawnSniper") {
+			G_StartSpawnSniper = Spawn.Id;
+		}
+		if (Spawn.Tag == "SpawnSpeed") {
+			G_StartSpawnSpeed = Spawn.Id;
+		}
 	}
-	if (Spawn.Tag == "SpawnSniper") {
-		G_StartSpawnSniper = Spawn.Id;
+
+// Initialisation des scores
+	MB_Sleep(1);
+	//TODO
+
+//Choix de la position Avec Warm Up
+	// WarmUp
+	if (!G_PlayerIsReady) {		
+		WarmUp::Initialize(90);
+		WarmUp::SetMinimumPlayersNumber(4);
+		WarmUp::Start();
 	}
-	if (Spawn.Tag == "SpawnSpeed") {
-		G_StartSpawnSpeed = Spawn.Id;
-	}
-}
-
-// ---------------------------------- //
-// Init scores
-MB_Sleep(1); ///< Allow the scores array to be sorted
-foreach (Score in Scores) {
-	declare Integer LastPoint for Score;
-	LastPoint = 0;
-}
-declare LeadId = NullId;
-
-if (Scores.existskey(0)) LeadId = Scores[0].User.Id;
-declare CurrentPointLimit = 10;
-
-
-
-// ---------------------------------- //
-// New map sound
-
-UIManager.UIAll.SendNotice("", CUIConfig::ENoticeLevel::MatchInfo, Null, CUIConfig::EAvatarVariant::Default, CUIConfig::EUISound::StartRound, 0);
-
-StartTime = Now;
-EndTime = StartTime + (S_TimeLimit * 1000);
-UIManager.UIAll.UISequence = CUIConfig::EUISequence::Playing;
+		
+		UIManager.UIAll.SendNotice("", CUIConfig::ENoticeLevel::MatchInfo, Null, CUIConfig::EAvatarVariant::Default, CUIConfig::EUISound::StartRound, 0);
+		StartTime = Now;
+		EndTime = StartTime + (S_TimeLimit * 1000);
+		UIManager.UIAll.UISequence = CUIConfig::EUISequence::Playing;
 ***
 
 ***OnNewPlayer***
 ***
-ScoresTable::SetFooterStats(Player, TextLib::Compose(_("Points limit: %1"), TextLib::ToText(10)));
+	declare todo1 = 5;
 ***
 
 ***OnNewSpectator***
 ***
-ScoresTable::SetFooterStats(Spectator, TextLib::Compose(_("Points limit: %1"), TextLib::ToText(10)));
+	declare todo = 5;
 ***
 
 // ---------------------------------- //
@@ -171,114 +186,99 @@ ScoresTable::SetFooterStats(Spectator, TextLib::Compose(_("Points limit: %1"), T
 ***PlayLoop***
 ***
 
-foreach (Event, PendingEvents) {
-	// ---------------------------------- //
-	// On armor empty
-	if (Event.Type == CSmModeEvent::EType::OnArmorEmpty) {
-		Discard(Event);
-	} 
-	// ---------------------------------- //
-	// On hit
-	else if (Event.Type == CSmModeEvent::EType::OnHit) {
-		Discard(Event);
-	} 
-	// ---------------------------------- //
-	// On player request respawn
-	else if (Event.Type == CSmModeEvent::EType::OnPlayerRequestRespawn) {
-		Discard(Event);
-	} 
-	// ---------------------------------- //
-	// Others
-	else {
-		PassOn(Event);
-	}
-}	
+//TODO
+	foreach (Event, PendingEvents) {
+		// On armor empty
+		if (Event.Type == CSmModeEvent::EType::OnArmorEmpty) {
+			if (Event.Shooter == Null || Event.Victim == Null) {
+					PassOn(Event);
+			} else {
+				if (S_FriendlyFire) {
+					// PassOn team hits
+					PassOn(Event);
+				}else{
+					Discard(Event);
+				}		
+			}
+		} 
 
-// ---------------------------------- //
+		// On hit
+		else if (Event.Type == CSmModeEvent::EType::OnHit) {
+			if (Event.Shooter == Null || Event.Victim == Null) {
+						Discard(Event);
+			} else {
+				if (Event.Shooter == Event.Victim) {
+					// Discard self damage
+					Discard(Event);
+				} else {
+					if (Event.Shooter != Null && Event.Victim != Null) {
+						if (S_FriendlyFire) {
+							Event.Damage = 100;
+							CUIConfig::EAvatarVariant::Sad;
+							CUIConfig::EUISound::Warning;
+							PassOn(Event);
+						} else {
+							Discard(Event);
+						}
+					} else {
+						// Discard team hits
+						Discard(Event);
+					}
+				}
+			}
+		} 
+
+		// On player request respawn
+		else if (Event.Type == CSmModeEvent::EType::OnCapture) {
+			// TODO
+		} 
+
+		//OnCaptureGoal
+		else if (Event.Type == CSmModeEvent::EType::OnPlayerRequestRespawn) {
+			Discard(Event);
+		} 
+		//OnCheckpoint
+
+		// Others
+		else {
+			PassOn(Event);
+		}
+	}	
+
 // Spawn players
-declare nbPlayer = 1;
-foreach (Player in Players) {
-	if(nbPlayer == 1){
-		if (Player.SpawnStatus == CSmPlayer::ESpawnStatus::NotSpawned && !Player.RequestsSpectate) {
-			MeleeSpawnPlayer(Player, "Tank");
-			SetPlayerWeapon(Player, CSmMode::EWeapon::Nucleus, False);
-			SetPlayerAmmoMax(Player, CSmMode::EWeapon::Nucleus, 5);
-			Player.AmmoGain = 1.2;
-			Player.ArmorMax = 1000;
-			Player.Armor = 1000;
-			Player.StaminaMax = 1.0;
-			Player.StaminaPower = 1.0;
-			Player.StaminaGain = 0.4;
+	declare nbPlayer = 1;
+	foreach (Player in Players) {
+		if(nbPlayer == 1){
+			if (Player.SpawnStatus == CSmPlayer::ESpawnStatus::NotSpawned && !Player.RequestsSpectate) {
+				MeleeSpawnPlayer(Player, "Tank");
+			}
 		}
-	}
-	if(nbPlayer == 2){
-		if (Player.SpawnStatus == CSmPlayer::ESpawnStatus::NotSpawned && !Player.RequestsSpectate) {
-			MeleeSpawnPlayer(Player, "Sniper");
-			SetPlayerWeapon(Player, CSmMode::EWeapon::Laser, False);
-			SetPlayerAmmoMax(Player, CSmMode::EWeapon::Laser, 1);
-			Player.AmmoGain = 1.7;
-			Player.ArmorMax = 300;
-			Player.Armor = 300;
-			Player.StaminaMax = 0.7;
-			Player.StaminaPower = 1.0;
-			Player.StaminaGain = 0.6;
+		if(nbPlayer == 2){
+			if (Player.SpawnStatus == CSmPlayer::ESpawnStatus::NotSpawned && !Player.RequestsSpectate) {
+				MeleeSpawnPlayer(Player, "Sniper");
+			}
 		}
-	}
-	if(nbPlayer == 3){
-		if (Player.SpawnStatus == CSmPlayer::ESpawnStatus::NotSpawned && !Player.RequestsSpectate) {
-			MeleeSpawnPlayer(Player, "Assault");
-			SetPlayerWeapon(Player, CSmMode::EWeapon::Rocket, False);
-			SetPlayerAmmoMax(Player, CSmMode::EWeapon::Rocket, 8);
-			Player.AmmoGain = 1.2;
-			Player.ArmorMax = 400;
-			Player.Armor = 400;
-			Player.StaminaMax = 0.7;
-			Player.StaminaPower = 1.0;
-			Player.StaminaGain = 0.8;
+		if(nbPlayer == 3){
+			if (Player.SpawnStatus == CSmPlayer::ESpawnStatus::NotSpawned && !Player.RequestsSpectate) {
+				MeleeSpawnPlayer(Player, "Assault");
+			}
 		}
-	}
-	if(nbPlayer == 4){
-		if (Player.SpawnStatus == CSmPlayer::ESpawnStatus::NotSpawned && !Player.RequestsSpectate) {
-			MeleeSpawnPlayer(Player, "Speed");
-			SetPlayerWeapon(Player, CSmMode::EWeapon::Arrow, False);
-			SetPlayerAmmoMax(Player, CSmMode::EWeapon::Arrow, 2);
-			Player.AmmoGain = 1.9;
-			Player.ArmorMax = 500;
-			Player.Armor = 500;
-			Player.StaminaMax = 1.0;
-			Player.StaminaPower = 1.0;
-			Player.StaminaGain = 1.0;
-			
+		if(nbPlayer == 4){
+			if (Player.SpawnStatus == CSmPlayer::ESpawnStatus::NotSpawned && !Player.RequestsSpectate) {
+				MeleeSpawnPlayer(Player, "Speed");	
+			}
 		}
+		nbPlayer += 1;
 	}
-	nbPlayer += 1;
-}
 
-// ---------------------------------- //
-// Play sound and notice if someone is taking the lead
-if (Scores.existskey(0) && Scores[0].User.Id != LeadId) {
-	LeadId = Scores[0].User.Id;
-	Message::SendBigMessage(TextLib::Compose(_("$<%1$> takes the lead!"), Scores[0].User.Name), 3000, 1, CUIConfig::EUISound::PhaseChange, 1);
-}
+	Message::Loop();
 
-// ---------------------------------- //
-// Update UI points limit
-if (CurrentPointLimit != 10) {
-	CurrentPointLimit = 10;
-	foreach (Player in AllPlayers) ScoresTable::SetFooterStats(Player, TextLib::Compose(_("Points limit: %1"), TextLib::ToText(10)));
-}
 
-Message::Loop();
+// Conditions de Victoires
+	declare IsMatchOver = False;
+	if (Now > EndTime) IsMatchOver = True;
+	if (IsMatchOver) MB_StopMap = True;
 
-// ---------------------------------- //
-// victory conditions
-declare IsMatchOver = False;
-if (Now > EndTime) IsMatchOver = True;
-foreach (Player in Players) {
-	if (Player.Score != Null && Player.Score.RoundPoints >= 10) IsMatchOver = True;
-}
-
-if (IsMatchOver) MB_StopMap = True;
 ***
 
 // ---------------------------------- //
@@ -286,46 +286,31 @@ if (IsMatchOver) MB_StopMap = True;
 // ---------------------------------- //
 ***EndMap***
 ***
-EndTime = -1;
-Score::RoundEnd();
-Score::MatchEnd(True);
+	EndTime = -1;
+	Score::RoundEnd();
+	Score::MatchEnd(True);
 
-// ---------------------------------- //
-// End match sequence
-declare CUser Winner <=> Null;
-declare MaxPoints = 0;
-foreach (Score in Scores) {
-	if (Score.Points > MaxPoints) {
-		MaxPoints = Score.Points;
-		Winner <=> Score.User;
-	} else if (Score.Points == MaxPoints) {
-		Winner <=> Null;
+	// End match sequence
+
+	foreach (Player in Players) {
+		UnspawnPlayer(Player);
 	}
-}
-foreach (Player in Players) {
-	if (Player.User != Winner) UnspawnPlayer(Player);
-	Interface::UpdatePosition(Player);
-}
 
-MB_Sleep(1000);
-Message::CleanBigMessages();
-UIManager.UIAll.BigMessageSound = CUIConfig::EUISound::EndRound;
-UIManager.UIAll.BigMessageSoundVariant = 0;
-if (Winner != Null) {
-	UIManager.UIAll.BigMessage = TextLib::Compose(_("$<%1$> wins the match!"), Winner.Name);
-} else {
-	UIManager.UIAll.BigMessage = _("|Match|Draw");
-}
-MB_Sleep(2000);
-UIManager.UIAll.UISequence = CUIConfig::EUISequence::EndRound;
-UIManager.UIAll.ScoreTableVisibility = CUIConfig::EVisibility::ForcedVisible;
-MB_Sleep(5000);
+	MB_Sleep(1000);
+	Message::CleanBigMessages();
+	UIManager.UIAll.BigMessageSound = CUIConfig::EUISound::EndRound;
+	UIManager.UIAll.BigMessageSoundVariant = 0;
 
-UIManager.UIAll.UISequence = CUIConfig::EUISequence::Podium;
-wait(UIManager.UIAll.UISequenceIsCompleted);
+	MB_Sleep(2000);
+	UIManager.UIAll.UISequence = CUIConfig::EUISequence::EndRound;
+	UIManager.UIAll.ScoreTableVisibility = CUIConfig::EVisibility::ForcedVisible;
+	MB_Sleep(5000);
 
-UIManager.UIAll.ScoreTableVisibility = CUIConfig::EVisibility::Normal;
-UIManager.UIAll.BigMessage = "";
+	UIManager.UIAll.UISequence = CUIConfig::EUISequence::Podium;
+	wait(UIManager.UIAll.UISequenceIsCompleted);
+
+	UIManager.UIAll.ScoreTableVisibility = CUIConfig::EVisibility::Normal;
+	UIManager.UIAll.BigMessage = "";
 ***
 
 // ---------------------------------- //
@@ -333,33 +318,60 @@ UIManager.UIAll.BigMessage = "";
 // ---------------------------------- //
 ***EndServer***
 ***
-ScoresTable::Unload();
-Interface::DestroyRank();
-SpawnScreen::DestroyRules();
-SpawnScreen::DestroyScores();
-SpawnScreen::DestroyMapInfo();
+	ScoresTable::Unload();
+	Interface::DestroyRank();
+	SpawnScreen::DestroyRules();
+	SpawnScreen::DestroyScores();
+	SpawnScreen::DestroyMapInfo();
 ***
 
 // ---------------------------------- //
 // Functions
 // ---------------------------------- //
 
-/* ------------------------------------- */
-/** Spawn a player
- *
- * @param	_Player		The player to spawn
- */
-Void MeleeSpawnPlayer(CSmPlayer _Player, Text Type) {
-	if(Type == "Tank"){
-		SM::SpawnPlayer(_Player, 0, BlockSpawns[G_StartSpawnTank]);
+	/* ------------------------------------- */
+	/* Spawn a player */
+	/* @param	_Player	 The player to spawn */
+	/* ------------------------------------- */
+	Void MeleeSpawnPlayer(CSmPlayer _Player, Text Type) {
+		if(Type == "Tank"){
+			SM::SpawnPlayer(_Player, 0, BlockSpawns[G_StartSpawnTank]);
+			SetPlayerWeapon(_Player, CSmMode::EWeapon::Nucleus, False);
+			SetPlayerAmmoMax(_Player, CSmMode::EWeapon::Nucleus, C_AmmoTank);
+			_Player.AmmoGain = C_AmmoGainTank;
+			_Player.ArmorMax = C_ArmorTank;
+			_Player.Armor = C_ArmorTank;
+			_Player.StaminaPower = C_StaminaTank;
+		}
+		if(Type == "Assault"){
+			SM::SpawnPlayer(_Player, 0, BlockSpawns[G_StartSpawnAssault]);
+			SetPlayerWeapon(_Player, CSmMode::EWeapon::Rocket, False);
+			SetPlayerAmmoMax(_Player, CSmMode::EWeapon::Rocket, C_AmmoAssault);
+			_Player.AmmoGain = C_AmmoGainAssault;
+			_Player.ArmorMax = C_ArmorAssault;
+			_Player.Armor = C_ArmorAssault;
+			_Player.StaminaPower = C_StaminaAssault;
+		}
+		if(Type == "Sniper"){
+			SM::SpawnPlayer(_Player, 0, BlockSpawns[G_StartSpawnSniper]);
+			SetPlayerWeapon(_Player, CSmMode::EWeapon::Laser, False);
+			SetPlayerAmmoMax(_Player, CSmMode::EWeapon::Laser, C_AmmoSniper);
+			_Player.AmmoGain = C_AmmoGainSniper;
+			_Player.ArmorMax = C_ArmorSniper;
+			_Player.Armor = C_ArmorSniper;
+			_Player.StaminaPower = C_StaminaSniper;
+		}
+		if(Type == "Speed"){
+			SM::SpawnPlayer(_Player, 0, BlockSpawns[G_StartSpawnSpeed]);
+			SetPlayerWeapon(_Player, CSmMode::EWeapon::Arrow, False);
+			SetPlayerAmmoMax(_Player, CSmMode::EWeapon::Arrow, C_AmmoSpeed);
+			_Player.AmmoGain = C_AmmoGainSpeed;
+			_Player.ArmorMax = C_ArmorSpeed;
+			_Player.Armor = C_ArmorSpeed;
+			_Player.StaminaPower = C_StaminaSpeed;
+		}
 	}
-	if(Type == "Assault"){
-		SM::SpawnPlayer(_Player, 0, BlockSpawns[G_StartSpawnAssault]);
-	}
-	if(Type == "Sniper"){
-		SM::SpawnPlayer(_Player, 0, BlockSpawns[G_StartSpawnSniper]);
-	}
-	if(Type == "Speed"){
-		SM::SpawnPlayer(_Player, 0, BlockSpawns[G_StartSpawnSpeed]);
-	}
-}
+
+// ---------------------------------- //
+// Fin du script
+// ---------------------------------- //
