@@ -1,1 +1,2 @@
 //Ajouter pendant le WarmUp le choix du type de perso
+//Respecter la hiérarchie des dossiers de [user_dir]/ManiaPlanet
