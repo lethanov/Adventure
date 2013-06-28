@@ -3,7 +3,7 @@
 #Include "TextLib" as TextLib
 #Include "Libs/Nadeo/Anchor.Script.txt" as Anchor
 
-#Const		Version		"1.0 (2013-06-23)"
+#Const		Version		"2013-06-28"
 
 // Rules texts
 #Const SpawnRules		"""- You must place $<$f00exactly Four Spawn$> 
@@ -416,14 +416,100 @@ Void EditAnchorData(Ident _EditedAnchorDataId) {
 
 
 /* -------------------------------------- */
+// Universe choice
+Void EditUniverse() 
+{  	
+	while(True) 
+	{			
+		ManialinkText = 
+		"""
+		<frame posn="30 30 51" id="MedievalSpec" hidden="1">
+			<label text="$f51$oMedieval Specifications" />
+			<label posn="0 -8" text="Character 1 : blabla" />
+			<label posn="0 -16" text="Character 2 : blabla" />
+			<label posn="0 -24" text="Character 3 : blabla" />
+			<label posn="0 -32" text="Character 4 : blabla" />
+		</frame>
+		
+		<frame posn="30 30 51" id="SciFiSpec" hidden="1">
+			<label text="$00c$oSci-Fi Specifications" />
+			<label posn="0 -8" text="Character 1 : blabla" />
+			<label posn="0 -16" text="Character 2 : blabla" />
+			<label posn="0 -24" text="Character 3 : blabla" />
+			<label posn="0 -32" text="Character 4 : blabla" />
+		</frame>
+		
+		<frame posn="0 0 50">
+			<quad id="BackgroundQuad" posn="-160 90 0" sizen="320 180" bgcolor="111" scriptevents="1"/>			
+			
+			<label text="Select your universe" posn="0 30" style="TextTitle3" halign="center"/>				
+				
+			<quad id="Medieval" posn="0 20 1" sizen="30 6" halign="center" valign="center" style="Bgs1InRace" substyle="BgCard" ScriptEvents="1"/>
+			<label text="$000Medieval" posn="0 20 2" halign="center" valign="center" style="TextButtonSmall" textsize="2"/>
+			
+			<quad id="SciFi" posn="0 12 1" sizen="30 6" halign="center" valign="center" style="Bgs1InRace" substyle="BgCard" ScriptEvents="1"/>
+			<label text="$000Sci-Fi" posn="0 12 2" halign="center" valign="center" style="TextButtonSmall" textsize="2"/>
+		</frame>
+		
+		<script><!--
+			main ()
+			{
+				declare ButtonClicked for Page = "";
+				while(True)
+				{
+					yield;
+					foreach(Event in PendingEvents)
+					{
+						if (Event.ControlId == "Medieval" || Event.ControlId == "SciFi")
+						{
+							if(Event.Type == CMlEvent::Type::MouseClick)
+							{	
+								if (ButtonClicked == "") ButtonClicked = Event.ControlId;
+							}							
+							else if(Event.Type == CMlEvent::Type::MouseOver)
+							{
+								Page.GetFirstChild(Event.ControlId ^ "Spec").Show();
+							}
+							else if(Event.Type == CMlEvent::Type::MouseOut)
+							{
+								Page.GetFirstChild(Event.ControlId ^ "Spec").Hide();
+							}
+						}
+
+					}
+				}
+			}
+		--></script>
+		""";
+
+		declare ButtonClicked for ManialinkPage = "" ;
+		ButtonClicked = "";
+		wait(ButtonClicked != "");		
+
+		if (ButtonClicked != "BackgroundQuad")
+		{
+			declare Page <=> ManialinkPage;
+			declare metadata Text Universe for Map;			
+			Universe = ButtonClicked;			
+			break;
+		}
+	}
+
+	ManialinkText = "";
+}
+
+/* -------------------------------------- */
 // Main
 /* -------------------------------------- */
 
 main() {
-	log("AdventureArena.Script.txt loaded!");
+	log("Adventure.Script.txt loaded!");
 	log("Version: "^Version);
 
 	CustomEditAnchorData = True;
+	
+	declare metadata Text Universe for Map;
+	if (Universe == "")	EditUniverse();	
 	
 	declare metadata Text ScriptVersion for Map;
 	ScriptVersion = Version;
@@ -431,7 +517,7 @@ main() {
 	InitAnchors();	
 	UpdateValidability();
 	
-	while (True) {	
+	while (True) {
 		yield;
 		
 		ManialinkText = "";

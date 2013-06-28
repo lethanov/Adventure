@@ -4,7 +4,7 @@
 
 #Extends "Modes/ShootMania/ModeBase.Script.txt"
 
-#Const	CompatibleMapTypes	"AdventureArena"
+#Const	CompatibleMapTypes	"Adventure"
 #Const	Version				"2013-06-23"
 #Const	ScriptName			"Adventure.Script.txt"
 
@@ -15,7 +15,7 @@
 #Include "Libs/Nadeo/Interface.Script.txt" as Interface
 #Include "Libs/Nadeo/ShootMania/SM.Script.txt" as SM
 #Include "Libs/Nadeo/ShootMania/Score.Script.txt" as Score
-#Include "Libs/Nadeo/ShootMania/WarmUpSimple.Script.txt" as WarmUp
+#Include "Libs/AdvWarmUp.Script.txt" as WarmUp
 #Include "Libs/Nadeo/ShootMania/SpawnScreen.Script.txt" as SpawnScreen
 #Include "Libs/Nadeo/ShootMania/ScoresTable.Script.txt" as ScoresTable
 
