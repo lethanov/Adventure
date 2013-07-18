@@ -1,0 +1,16 @@
+Mode actuellement en développement : Annihilation
+
+Finalité : Mission dans le mode final Adventure
+
+But du jeu :
+De 1 à 4 joueurs tous dans la même équipe, leur but est d'éliminer tous les bots se trouvant sur la map avant le temps imparti. Chaque élimitation d'un bot donnera du temps supplémentaire variable. Ensuite selon la map, les joueurs seront amenés à affronter un boss de fin de map.
+
+Mécaniques :
+Le friendly fire est inactif.
+Lorsqu'un joueur élimine un bot, il a une chande sur deux de récupérer un point d'armure.
+Le temps supplémentaire lors de l'élimination d'un bot est variable de 5 à 15 secondes et est calculé à partir de la distance de touche entre le tireur et la victime. Plus les joueurs progressent sur la map, plus le temps supplémentaire obtenu devient faible.
+Il y a actuellement 4 types de bots :
+- Les verts, ils utilisent des roquettes, ont une fréquence de tir élevée et ont une précision de 0.5.
+- Les rouges, ils utilisent des nucleus, ont une fréquence de tir élevée et ont une précision de 0.4.
+- Les violets, ils utilisent des arrows, ont une fréquence de tir faible et ont une précision de 0.7.
+- Les bleus, ils utilisent des lasers, ont une fréquence de tir très faible et ont une précision de 0.9.
